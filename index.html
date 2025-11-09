@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mind‑Loving Maths — Sets & Probability</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --card:#111827ee;
+      --ink:#e5e7eb;
+      --muted:#94a3b8;
+      --accent:#14b8a6;
+      --accent-2:#22d3ee;
+      --bad:#ef4444;
+      --good:#22c55e;
+      --gold:#fbbf24;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box;font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji";}
+    html,body{height:100%;}
+    body{margin:0;background: radial-gradient(1200px 800px at 20% -10%, #1e293b, #0b1020 60%), var(--bg); color:var(--ink);}
+    .wrap{max-width:1100px;margin:12px auto;padding:12px;}
+    header.hero{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:12px;padding:14px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));}
+    .brand{display:flex;align-items:center;gap:12px}
+    .hero-svg{max-height:120px;height:auto;width:auto}
+    h1{font-size:clamp(18px,3.6vw,26px);margin:0}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .pill{background:#0b1222;border:1px solid rgba(255,255,255,.08);padding:8px 12px;border-radius:999px;color:var(--muted)}
+    select, button, input[type="number"], input[type="text"]{background:#0b1222;color:var(--ink);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px}
+    button{cursor:pointer;transition:transform .04s ease, box-shadow .2s ease}
+    button:hover{transform:translateY(-1px)}
+    button.primary{background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#00222a; border:none; font-weight:700}
+    button.good{background:linear-gradient(135deg, #34d399, #10b981);border:none;color:#052018;font-weight:700}
+    button.bad{background:linear-gradient(135deg, #f87171, #ef4444);border:none;color:#2a0000;font-weight:700}
+    .muted{color:var(--muted)}
+    .grid{display:grid;gap:12px}
+    .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    @media (max-width:860px){.g-2{grid-template-columns:1fr}}
+    .progress{height:10px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .4s ease}
+    .msg{padding:10px 12px;border-radius:10px;border:1px dashed rgba(255,255,255,.12);background:rgba(20,20,35,.4)}
+    .question{font-size:clamp(20px,4.0vw,28px);font-weight:800;line-height:1.25;color:#fff;}
+    .qbox{padding:14px;border-radius:12px;background:#0b1222;border:1px solid rgba(255,255,255,.06);}
+    .inline-reflect{display:flex;gap:8px;align-items:center;margin-top:8px}
+    .stack-right{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+    .tiny{font-size:12px}
+    #fx{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+    .confetti{position:absolute;width:8px;height:12px;opacity:.9}
+    @keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
+    @media (prefers-reduced-motion: reduce){*, *::before, *::after{animation:none !important; transition:none !important}}
+    .hero-meta{flex:1;min-width:0}
+    .hero-meta p{margin:6px 0 0;color:var(--muted);font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Embedded calm banner (inline SVG) -->
+    <header class="hero" role="banner" aria-label="Mind‑Loving Maths header">
+      <img src="mind-loving-logo.svg" alt="Mind-Loving Maths logo" style="height:86px;">
+
+      <div class="hero-meta">
+        <h1>Mind‑Loving Maths</h1>
+        <p>Gentle practice for sets & probability — small steps, steady confidence.</p>
+      </div>
+
+      <div class="row" style="align-items:center">
+        <div id="loadedCount" class="pill">Questions: —</div>
+        <button id="previewModeBtn" class="primary">Preview Session</button>
+      </div>
+    </header>
+
+    <section class="card grid g-2" role="region" aria-label="Mastery Controls">
+      <div>
+        <label class="muted tiny">Choose a Level</label><br/>
+        <select id="levelPicker" aria-label="Choose level">
+          <option value="L1">Level 1 — Sets basics (∈, subsets, #A)</option>
+          <option value="L2">Level 2 — Venn & counts (A∪B, A∩B, only)</option>
+          <option value="L3">Level 3 — Probability (bags & outcomes)</option>
+          <option value="L4">Level 4 — Challenge mix (strategy)</option>
+        </select>
+        <div class="tiny muted" style="margin-top:6px">Goal: Master a level by answering 5 in a row. A session is tuned for ~30–40 minutes.</div>
+      </div>
+      <div>
+        <label class="muted tiny">Mastery Progress</label>
+        <div class="progress" aria-hidden="true"><div id="progressBar" class="bar"></div></div>
+        <div class="row" style="margin-top:6px">
+          <span class="tag">Level mastery: <strong id="levelMastery">0/5</strong></span>
+          <span class="tag">Type repetitions: <strong id="repLeft">3</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card grid highlight" style="margin-top:12px" role="region" aria-live="polite" aria-label="Question">
+      <div class="row" style="justify-content:space-between">
+        <div class="tiny muted">If you wobble, that’s data — try a new strategy.</div>
+        <div class="tiny muted">Attempts remaining: <span id="attemptsLeft">3</span></div>
+      </div>
+      <div id="questionText" class="question qbox tight">Press Preview Session to start a short, guided run.</div>
+      <div id="workArea" class="tight"></div>
+      <div id="feedback" class="msg coach tiny" style="display:none;margin-top:10px"></div>
+      <div class="inline-reflect" id="inlineReflectRow" style="display:none">
+        <label class="tiny muted" for="reflectInline">Quick reflect:</label>
+        <input id="reflectInline" type="text" placeholder="What worked? One tiny next step…" />
+      </div>
+      <div class="stack-right" style="margin-top:10px">
+        <button id="hintBtn" class="cta">🔍 Clue</button>
+        <button id="checkBtn" class="primary cta">Check</button>
+        <button id="submitBtn" class="good cta" style="display:none">Submit & Next</button>
+        <button id="quickNextBtn" class="good cta big" style="display:none">Next ▶</button>
+        <button id="skipBtn" class="bad cta">Skip</button>
+      </div>
+    </section>
+
+    <section id="tipsCard" class="card grid" style="margin-top:12px" role="region" aria-label="Tips">
+      <div class="tiny">
+        <span class="muted">Coach tips:</span>
+        Name what you know → act on one step → check → adjust. Using a clue is smart learning.
+      </div>
+    </section>
+  </div>
+
+  <div id="wheelModal" class="modal" role="dialog" aria-modal="true" aria-label="Reward wheel" style="display:none">
+    <div class="wheel-wrap card" style="max-width:520px;margin:40px auto;">
+      <div class="center"><div class="pointer"></div></div>
+      <div class="wheel" id="wheel"></div>
+      <div class="center" style="gap:10px;margin-top:12px">
+        <button id="spinBtn" class="primary">Spin to claim reward</button>
+        <button id="closeWheelBtn">Close</button>
+      </div>
+      <div id="wheelMsg" class="center tiny" style="margin-top:8px;color:var(--muted)">Device‑time rewards vary 0–5 min. Caps apply for healthy balance.</div>
+    </div>
+  </div>
+  <div id="fx"></div>
+
+<script>
+  // SESSION CONTROL
+  const SESSION_QUESTIONS = 9; // 8-12 recommended for ~30-40 minutes
+  let questionsAsked = 0;
+
+  // ------------------------------
+  // Embedded quiz JSON (from your quiz.json)
+  window.__EMBEDDED_JSON__ = {
+    "meta": {
+      "title": "Sets & Probability — Quick Quiz",
+      "version": "1.0",
+      "created": "2025-11-09T08:12:16.650350Z"
+    },
+    "questions": [
+      {
+        "id": "Q1",
+        "topic": "set-operations",
+        "level": "beginner",
+        "type": "short",
+        "prompt": "In words, describe A ∪ B.",
+        "answer": "elements that are in A or in B or in both",
+        "hints": [
+          "Think: 'or' includes either set or both.",
+          "Try starting your sentence with 'Elements that are in...'"
+        ],
+        "solution": "A ∪ B is the set of elements that are in A or in B (including those in both)."
+      }
+    ]
+  };
+
+  // ------------------------------
+  // State & small bank adapter
+  const $ = (sel)=>document.querySelector(sel);
+  const rand = (a,b)=> Math.floor(Math.random()*(b-a+1))+a;
+
+  const state = {
+    useBank: true,
+    bank: [],
+    i:0,
+    progressInRow:0,
+    typeRepLeft:3,
+    attemptsLeft:3,
+    current:{},
+    minutesEarned: 0,
+    streak: 0,
+    dailyCap: 20,
+  };
+
+  const LS_KEY = "mlm_progress_v1";
+  function save(){ localStorage.setItem(LS_KEY, JSON.stringify({minutesEarned:state.minutesEarned, streak:state.streak})); }
+  function load(){ try{ const d=JSON.parse(localStorage.getItem(LS_KEY)||"{}"); state.minutesEarned=d.minutesEarned||0; state.streak=d.streak||0;}catch(e){} }
+
+  function buildBankFromEmbedded(embed){
+    if(!embed || !Array.isArray(embed.questions)) return [];
+    return embed.questions.map(q=>({
+      id: q.id || ('q_'+Math.random().toString(36).slice(2)),
+      prompt: q.prompt,
+      type: q.type || 'short',
+      answer: (q.type==='numeric' ? Number(q.answer) : q.answer),
+      choices: q.choices || null,
+      answer_index: q.answer_index ?? null,
+      clue: (q.hints && q.hints[0]) || (q.clue || ''),
+      hints: q.hints || [],
+      explain: q.solution || q.explain || '',
+      topic: q.topic || '',
+      level: q.level || ''
+    }));
+  }
+
+  function round2(x){ return Math.round(x*100)/100; }
+
+  function renderBankQuestion(){
+    const box = document.getElementById('questionText');
+    if(!state.bank.length){ box.textContent = 'No questions in the bank.'; return; }
+    const q = state.bank[state.i];
+    state.current = q;
+    state.attemptsLeft = 3;
+    document.getElementById('questionText').textContent = q.prompt;
+    const work = document.getElementById('workArea'); work.innerHTML = '';
+    const fb = document.getElementById('feedback'); fb.style.display='none';
+
+    if(q.type === 'mcq' && Array.isArray(q.choices)){
+      work.innerHTML = q.choices.map((c,idx)=>`<label style="display:block;margin:6px 0;"><input name="opt" type="radio" value="${idx}"> ${c}</label>`).join('');
+    } else {
+      const input = document.createElement('input');
+      input.id = 'answerInput';
+      input.type = (typeof q.answer === 'number') ? 'number' : 'text';
+      input.placeholder = (input.type==='number') ? 'enter a number (2dp ok)' : 'your answer';
+      work.appendChild(input);
+      setTimeout(()=>input.focus(),50);
+    }
+    $('#feedback').style.display='none';
+    $('#inlineReflectRow').style.display='none';
+    $('#submitBtn').style.display='none';
+    $('#quickNextBtn').style.display='none';
+    updateHUD();
+  }
+
+  function compareAnswers(user, truth){
+    if(typeof truth === 'string') return String(user||'').trim().toLowerCase() === String(truth).trim().toLowerCase();
+    if(typeof truth === 'number') {
+      const u = Number(user);
+      if(Number.isNaN(u)) return false;
+      return Math.abs(u - truth) < 0.005;
+    }
+    return false;
+  }
+
+  function checkBankAnswer(){
+    const fb = document.getElementById('feedback');
+    const q = state.current;
+    let ok=false;
+    if(q.type==='mcq' && q.choices){
+      const sel = document.querySelector('input[name=opt]:checked');
+      if(!sel){ alert('Pick an option.'); return; }
+      ok = Number(sel.value) === q.answer_index;
+    } else {
+      const v = document.getElementById('answerInput').value;
+      ok = compareAnswers(v, q.answer);
+    }
+
+    if(!q.attempts) q.attempts = 0;
+    q.attempts++;
+    if(ok){
+      fb.style.display='block'; fb.style.borderLeftColor='var(--good)';
+      fb.innerHTML = `✅ Correct. ${q.explain ? (' — '+q.explain) : ''}`;
+      confettiBurst();
+      state.streak++; save();
+      setTimeout(nextBankQuestion, 700);
+    } else {
+      fb.style.display='block'; fb.style.borderLeftColor='var(--bad)';
+      const h = (q.hints && q.hints[q.attempts-1]) || q.clue || "Try a small step.";
+      fb.innerHTML = `❌ Not yet. Hint: ${h}`;
+      state.streak = 0; save();
+      if(q.attempts >= (q.hints? q.hints.length+1 : 2)){ 
+        setTimeout(()=>{ fb.innerHTML += `<div style=\"margin-top:8px;color:var(--muted)\">Solution: ${q.explain || q.answer}</div>`; }, 300);
+      }
+    }
+    updateHUD();
+  }
+
+  function nextBankQuestion(){
+    questionsAsked++;
+    if(questionsAsked >= SESSION_QUESTIONS){
+      document.getElementById('questionText').textContent = `Session complete! You completed ${questionsAsked} questions. 🎉`;
+      document.getElementById('workArea').innerHTML = '<div class="msg">Take a short break and celebrate the wins. Review hints if needed.</div>';
+      updateHUD();
+      openWheel();
+      return;
+    }
+    if(state.i < state.bank.length - 1){ state.i++; renderBankQuestion(); } else { finishSession(); }
+  }
+
+  function finishSession(){
+    document.getElementById('questionText').textContent = 'End of bank.';
+    document.getElementById('workArea').innerHTML = '<div class="msg">Well done — review or try another level.</div>';
+    openWheel();
+  }
+
+  const wedgeMinutes = [0,1,2,3,4,5,2,3];
+  function drawWheel(){ const wheel = $('#wheel'); wheel.innerHTML=''; const colors = ['#14b8a6','#22d3ee','#34d399','#fbbf24','#60a5fa','#c084fc','#fb7185','#38bdf8']; const N = wedgeMinutes.length; for(let i=0;i<N;i++){ const slice = document.createElement('div'); slice.className='slice'; const deg = 360/N; const a = i*deg; slice.style.transform = `rotate(${a}deg) skewY(${90-deg}deg)`; slice.style.background = colors[i%colors.length]; slice.style.opacity = .9; const lab = document.createElement('div'); lab.style.position='absolute'; lab.style.top='50%'; lab.style.left='50%'; lab.style.transform = `rotate(${deg/2}deg) translate(10px,-50%) skewY(-${90-deg}deg)`; lab.style.transformOrigin='0 0'; lab.style.color='#001018'; lab.style.fontWeight='700'; lab.textContent = `${wedgeMinutes[i]} min`; slice.appendChild(lab); wheel.appendChild(slice); } }
+  function openWheel(){ $('#wheelModal').style.display='block'; }
+  function closeWheel(){ $('#wheelModal').style.display='none'; }
+  function spin(){ const wheel = $('#wheel'); const N = wedgeMinutes.length; const deg = 360/N; const targetIdx = rand(0, N-1); const spins = 6*360; const stopAt = spins + (targetIdx*deg) + deg/2 + rand(-5,5); wheel.style.transition = 'transform 3.2s cubic-bezier(.22,.8,.24,1)'; wheel.style.transform = `rotate(${stopAt}deg)`; setTimeout(()=>{ const prize = wedgeMinutes[targetIdx]; const remainingCap = Math.max(0, state.dailyCap - state.minutesEarned); const awarded = Math.min(prize, remainingCap); state.minutesEarned += awarded; save(); $('#minutesEarned').textContent = state.minutesEarned; $('#wheelMsg').textContent = awarded>0 ? `🎉 You earned ${awarded} minute(s)!` : `✨ Cap reached today.`; }, 3300); }
+
+  function updateHUD(){
+    $('#attemptsLeft').textContent = state.attemptsLeft;
+    $('#repLeft').textContent = state.typeRepLeft;
+    $('#levelMastery').textContent = `${state.progressInRow}/5`;
+    $('#minutesEarned').textContent = state.minutesEarned;
+    $('#streak').textContent = state.streak;
+    $('#progressBar').style.width = `${(state.progressInRow/5)*100}%`;
+  }
+
+  $('#checkBtn').addEventListener('click', ()=>{ if(state.useBank && state.bank.length) checkBankAnswer(); });
+  $('#submitBtn').addEventListener('click', nextBankQuestion);
+  $('#quickNextBtn').addEventListener('click', nextBankQuestion);
+  $('#skipBtn').addEventListener('click', ()=>{ state.streak=0; save(); if(state.useBank) nextBankQuestion(); });
+  $('#hintBtn').addEventListener('click', ()=>{ const q = state.current; if(q && q.hints && q.hints[0]) { document.getElementById('feedback').innerHTML = '💡 '+q.hints[0]; document.getElementById('feedback').style.display='block'; }});
+  $('#spinBtn').addEventListener('click', spin);
+  $('#closeWheelBtn').addEventListener('click', closeWheel);
+  $('#previewModeBtn').addEventListener('click', ()=>{ questionsAsked=0; state.i=0; renderBankQuestion(); });
+
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ const submitShown = ($('#submitBtn') && $('#submitBtn').style.display !== 'none') || ($('#quickNextBtn') && $('#quickNextBtn').style.display !== 'none'); submitShown ? nextBankQuestion() : (state.useBank? checkBankAnswer() : null); } });
+
+  load(); drawWheel(); updateHUD();
+  (function initBank(){ const embed = window.__EMBEDDED_JSON__ || null; state.bank = buildBankFromEmbedded(embed); if(state.bank.length) state.useBank = true; else state.useBank = false; // set UI count
+    const el = document.getElementById('loadedCount'); if(el) el.textContent = `Questions: ${state.bank.length} (embedded)`; })();
+
+  function confettiBurst(){ const fx = document.querySelector('#fx'); const colors = ['#14b8a6','#22d3ee','#34d399','#fbbf24','#60a5fa']; for(let i=0;i<18;i++){ const d = document.createElement('div'); d.className='confetti'; d.style.left = Math.random()*100 + 'vw'; d.style.top = '-10vh'; d.style.background = colors[i%colors.length]; d.style.transform = `translateY(-20px) rotate(${Math.random()*360}deg)`; d.style.animation = `fall ${1.2 + Math.random()*0.9}s linear forwards`; fx.appendChild(d); setTimeout(()=> d.remove(), 2200); } }
+</script>
+</body>
+</html>
